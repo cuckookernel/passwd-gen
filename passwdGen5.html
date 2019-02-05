@@ -8,7 +8,7 @@
 	<style>
 	body {
 	    background-color: black; 
-        color: white;
+        color: #ffbb33;
 	    font-family: Verdana;
 	    font-variant: Calibry;
 	}
@@ -22,21 +22,20 @@
 		padding: 20px;
 		border-collapse: collapse;
         border: solid 1px;
-        border-color: white;
+        border-color: "#ffc";
 	}
 
 	td {
-		padding: 8px;
-		border: solid 1px;	
+		padding: 8px;		
 	}
+
+    .b {
+        border: solid 1px;
+    }
     
     .np {
-        pading: 0px;    
+        padding: 0px;    
     }
-
-	.nb {
-		border: none;
-	}
     
     .generated {
         font-family:Courier;
@@ -259,15 +258,13 @@
       //var ascii_tab="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.";
         var ascii_tab="0123456789ABCEFGHJKLMNPQRSTUWXYZabcdefghijkmnpqrstuwxyz_.$#()!/+";
       var str = "";
-      for(var i = 0; i < binarray.length; i++)
-        {
+      for(var i = 0; i < binarray.length; i++) {
           str += ascii_tab.charAt( (binarray[i] >> 0) & 0x3F ) +
                  ascii_tab.charAt( (binarray[i] >>      6) & 0x3F ) +
                  ascii_tab.charAt( (binarray[i] >>     12) & 0x3F ) +
                  ascii_tab.charAt( (binarray[i] >>     18) & 0x3F ) +
-                 ascii_tab.charAt( (binarray[i] >>     24) & 0x3F ) ;
-             
-        }
+                 ascii_tab.charAt( (binarray[i] >>     24) & 0x3F ) ;             
+      }
       return str;
     }
 
@@ -281,9 +278,10 @@
     
     function generate(  ) {
         let mode_v5 = document.getElementById("mode_v5").checked;
-        console.log( "mode_v5", mode_v5 );
+        // console.log( "mode_v5", mode_v5 );
         if( mode_v5 ) {
-            return search_v5();
+            let do_search = document.getElementById("search").checked;
+            return search_v5(do_search);
         } else {            
             let master   = document.getElementById("master").value;
             let site     = document.getElementById("site").value;
@@ -291,32 +289,46 @@
         }
     }
     
-    function search_v5(  ) {    
-        let master  = document.getElementById("master").value;
-        let site   = document.getElementById("site").value;
-        let salt_fld   = document.getElementById("salt");
-        let req_length  = parseInt( document.getElementById("req_length").value );
-        let req_digits  = parseInt( document.getElementById("req_digits").value );
-        let req_upper   = parseInt( document.getElementById("req_upper").value );
-        let req_special = parseInt( document.getElementById("req_special").value );
+    function val_from_elem( elem_name ) {
+        return document.getElementById(elem_name).value
+    }
+
+    function int_from_elem( elem_name ) {
+        return parseInt( document.getElementById(elem_name).value )
+    }
+
+    function search_v5( do_search ) {    
+        let master  = val_from_elem("master").toLowerCase();
+        let site    = val_from_elem("site").toLowerCase();
+        let req_length  = int_from_elem( "req_length" );
         
+        let salt_fld = document.getElementById("salt"); 
         let salt = parseInt( salt_fld.value );
         
-        console.log("search_v5 starts -- req_length:", req_length, "req_digits: ", req_digits );
-                
         let passwd = md5_special( master + ':' + site + ":" + salt ).substr(0, req_length);
-        // console.log( "Before loop: salt: ", salt, typeof(salt), passwd ); 
-        let cnt = 0; 
-        while(!check_generated( passwd, req_digits, req_upper, req_special ) 
-              && cnt < 1000 ) {
-            salt += 1; 
-            passwd = md5_special( master + ':' + site + ":" + salt ).substr(0, req_length);            
-            // console.log( "inside loop: salt: ",salt, typeof(salt), passwd );
-            cnt += 1;
-        }   
-       
-        salt_fld.value = salt;        
-        return passwd;
+        // console.log( "master, site,salt =", master, ",", site, ",", salt );
+        
+        if( do_search ) {            
+            let req_digits  = int_from_elem( "req_digits" );
+            let req_upper   = int_from_elem( "req_upper" );
+            let req_special = int_from_elem( "req_special" );
+                    
+            // console.log( "Before loop: salt: ", salt, typeof(salt), passwd ); 
+            let cnt = 0; 
+        
+            while( !check_generated( passwd, req_digits, req_upper, req_special ) 
+                   && (cnt < 1000) ) {
+                salt += 1; 
+                passwd = md5_special( master + ':' + site + ":" + salt ).substr(0, req_length);            
+                // console.log( "inside loop: salt: ",salt, typeof(salt), passwd );
+                cnt += 1;
+            } 
+        }
+
+        salt_fld.value = salt;
+        // console.log( "salt, passwd:",  salt, ",", passwd ); 
+        window.setTimeout( clearSome, 60000 );
+        return passwd;        
     }   
     
     function check_generated( passwd, req_digits, req_upper, req_special ) {
@@ -340,70 +352,81 @@
     function isDigit( c )     { return  c.match( /[0-9]/g ) } 
     function isSpecial( c )   { return !c.match( /[0-9A-Za-z]/g ) }
 
+    function clearSome() {
+        document.getElementById("master").value = "";
+        document.getElementById("password").value = "";
+    }
+
 </script>
 
 <!-- <meta content="MSHTML 6.00.2900.2722" name=GENERATOR></HEAD> --> 
 
 <body>
 
-<form class="callou" name="f" 
-    onsubmit="password.value = generate(); document.f.password.focus(); document.f.password.select(); return false; " method="post" />
+<form name="f" 
+      onsubmit="password.value = generate(); document.f.password.focus(); document.f.password.select(); return false;"
+      method="post" />
     <!-- onsubmit="password.value = search(master.value + ':' + site.value).substr(0,8);document.f.password.focus();        document.f.password.select(); return false; " --> 
-    
+   
 
 <table>
   <tbody>
-  	<tr> <td class = "nb"><b>Your master password:</b></td>
-    	 <td class = "nb np">
+  	<tr> <td><b>Master pwd:</b></td>
+    	 <td class = "np">
     		<input type=password name="master" id="master" />
       		<script language=JavaScript>document.f.master.focus()</script> </td> </tr>
 
-   <tr> <td class = "nb" >Site token:</td> 
-       	<td class = "nb np" ><input name="site" id="site"/> </td> </tr>
+   <tr> <td >Site token:</td> 
+       	<td class = "np" ><input name="site" id="site"/> </td> </tr>
         
-   <tr> <td class = "nb" >Mode:</td>
+   <tr> <td>Mode:</td>
        	<td class = "nb np" >
             <input type="radio" name="mode" id="mode_v5" value="v5" checked=1> v5<br>
             <input type="radio" name="mode" value="classic"> classic<br> </td> </tr>
         
-   <tr> <td class = "nb" >Start salt:</td> 
-       	<td class = "nb np" ><input name="salt" id="salt" value="0" size="3"/></td> </tr>
+   <tr> <td >Start salt:</td> 
+       	<td class = "np" ><input name="salt" id="salt" value="0" size="3"/></td> </tr>
         
-   <tr> <td class = "nb" >Requirements: </td>
-        <td>length:        <input name="req_length"  id="req_length"  value="12" size="1"/> 
-            digits:        <input name="req_digits"  id="req_digits"  value="2"  size="1"/> 
-            <br />
-            upper:         <input name="req_upper"   id="req_upper"   value="3"  size="1"/>
-            special: <input name="req_special" id="req_special" value="2"  size="1"/> </td>
-        </tr>  
+    <tr> <td>Search: </td> 
+         <td class="np" > <input type="checkbox" id="search" checked=1/> </td> 
+    </tr>
+   <tr> <td>Reqs: </td>
+        <td class = "nb np"> <table>
+                <tr> <td> length: </td> <td><input name="req_length"  id="req_length"  value="12" size="1"/> </td>
+                  <td> digits: </td> <td><input name="req_digits"  id="req_digits"  value="2"  size="1"/> </td> </tr>
+                <tr> <td>upper:   </td> <td><input name="req_upper"   id="req_upper"   value="3"  size="1"/> </td>
+                     <td>special: </td> <td><input name="req_special" id="req_special" value="2"  size="1"/> </td> </tr> 
+            </table>
+        </td>
+    </tr>  
    
    <tr>	<td colSpan=2 class = "nb"> <input type="submit" value="Generate"> </td> </tr>
   		
-   <tr> <td class = "nb"><b>Generated password: </b></td>
+   <tr> <td><b>Gen pwd: </b></td>
         <td class = "nb np"><input class="generated" name="password" id="password" /> </td> </tr>
 
    <tr>  <td colSpan=2 class="nb"> &nbsp; </td>  </tr>
 
-   <tr> <td  rowspan="11" class = "nb" style="vertical-align: top" > &nbsp;</td>
+   <tr> <td  rowspan="11" style="vertical-align: top" > &nbsp;</td>
      	
   <!-- <td onclick="document.getElementById('site').value = 'cornell3';f.onsubmit();  ">
   		  Cornell</td>  </tr> -->
   <!-- <tr> <td  onclick="document.getElementById('site').value = 'cam2'; f.onsubmit(); ">
         cam </td> </tr> -->
 
-  <tr> <td onclick="document.getElementById('site').value = 'yahoo2019'; f.onsubmit(); ">
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'yahoo2019'; f.onsubmit(); ">
         Yahoo!</td> </tr>
-  <tr> <td onclick="document.getElementById('site').value = 'amazon'; f.onsubmit(); ">
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'amazon'; f.onsubmit(); ">
       	Amazon.com</td> </tr> 
-  <tr> <td onclick="document.getElementById('site').value = 'ebay';f.onsubmit(); ">
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'ebay';f.onsubmit(); ">
      	Ebay </td> </tr> 
-  <tr> <td onclick="document.getElementById('site').value = 'paypal'; f.onsubmit();">
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'paypal'; f.onsubmit();">
 		PayPal  </td> </tr> 
-  <tr> <td onclick="document.getElementById('site').value = 'facebook'; f.onsubmit();">
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'facebook'; f.onsubmit();">
 	 	Facebook </td> </tr> 
-  <tr> <td onclick="document.getElementById('site').value = 'netflix'; f.onsubmit();" > 
+  <tr> <td class="b" onclick="document.getElementById('site').value = 'netflix'; f.onsubmit();" > 
 		Netflix </td> </tr> 
-  <tr> <td onclick="document.getElementById('site').value = 'coursera2015'; f.onsubmit();" > 
+  <tr> <td class="b"  onclick="document.getElementById('site').value = 'coursera2015'; f.onsubmit();" > 
      	Coursera </td> </tr>
   
 </tbody>
